@@ -375,8 +375,8 @@ function warning(cond: boolean, message: string) {
 // BROWSER
 ////////////////////////////////////////////////////////////////////////////////
 
-type HistoryState = {
-  usr: State;
+type HistoryState<S extends State = State> = {
+  usr: S;
   key?: string;
   idx: number;
 };
@@ -394,18 +394,18 @@ export type BrowserHistoryOptions = { window?: Window };
  *
  * @see https://github.com/ReactTraining/history/tree/master/docs/api-reference.md#createbrowserhistory
  */
-export function createBrowserHistory(
+export function createBrowserHistory<S extends State = State>(
   options: BrowserHistoryOptions = {}
-): BrowserHistory {
+): BrowserHistory<S> {
   let { window = document.defaultView! } = options;
   let globalHistory = window.history;
 
-  function getIndexAndLocation(): [number, Location] {
+  function getIndexAndLocation(): [number, Location<S>] {
     let { pathname, search, hash } = window.location;
     let state = globalHistory.state || {};
     return [
       state.idx,
-      readOnly<Location>({
+      readOnly<Location<S>>({
         pathname,
         search,
         hash,
@@ -464,8 +464,8 @@ export function createBrowserHistory(
 
   let action = Action.Pop;
   let [index, location] = getIndexAndLocation();
-  let listeners = createEvents<Listener>();
-  let blockers = createEvents<Blocker>();
+  let listeners = createEvents<Listener<S>>();
+  let blockers = createEvents<Blocker<S>>();
 
   if (index == null) {
     index = 0;
@@ -476,8 +476,8 @@ export function createBrowserHistory(
     return typeof to === 'string' ? to : createPath(to);
   }
 
-  function getNextLocation(to: To, state: State = null): Location {
-    return readOnly<Location>({
+  function getNextLocation(to: To, state: S = null as S): Location<S> {
+    return readOnly<Location<S>>({
       ...location,
       ...(typeof to === 'string' ? parsePath(to) : to),
       state,
@@ -486,9 +486,9 @@ export function createBrowserHistory(
   }
 
   function getHistoryStateAndUrl(
-    nextLocation: Location,
+    nextLocation: Location<S>,
     index: number
-  ): [HistoryState, string] {
+  ): [HistoryState<S>, string] {
     return [
       {
         usr: nextLocation.state,
@@ -499,7 +499,7 @@ export function createBrowserHistory(
     ];
   }
 
-  function allowTx(action: Action, location: Location, retry: () => void) {
+  function allowTx(action: Action, location: Location<S>, retry: () => void) {
     return (
       !blockers.length || (blockers.call({ action, location, retry }), false)
     );
@@ -511,7 +511,7 @@ export function createBrowserHistory(
     listeners.call({ action, location });
   }
 
-  function push(to: To, state?: State) {
+  function push(to: To, state?: S) {
     let nextAction = Action.Push;
     let nextLocation = getNextLocation(to, state);
     function retry() {
@@ -535,7 +535,7 @@ export function createBrowserHistory(
     }
   }
 
-  function replace(to: To, state?: State) {
+  function replace(to: To, state?: S) {
     let nextAction = Action.Replace;
     let nextLocation = getNextLocation(to, state);
     function retry() {
@@ -556,7 +556,7 @@ export function createBrowserHistory(
     globalHistory.go(delta);
   }
 
-  let history: BrowserHistory = {
+  let history: BrowserHistory<S> = {
     get action() {
       return action;
     },
@@ -613,20 +613,20 @@ export type HashHistoryOptions = { window?: Window };
  *
  * @see https://github.com/ReactTraining/history/tree/master/docs/api-reference.md#createhashhistory
  */
-export function createHashHistory(
+export function createHashHistory<S extends State = State>(
   options: HashHistoryOptions = {}
-): HashHistory {
+): HashHistory<S> {
   let { window = document.defaultView! } = options;
   let globalHistory = window.history;
 
-  function getIndexAndLocation(): [number, Location] {
+  function getIndexAndLocation(): [number, Location<S>] {
     let { pathname = '/', search = '', hash = '' } = parsePath(
       window.location.hash.substr(1)
     );
     let state = globalHistory.state || {};
     return [
       state.idx,
-      readOnly<Location>({
+      readOnly<Location<S>>({
         pathname,
         search,
         hash,
@@ -696,8 +696,8 @@ export function createHashHistory(
 
   let action = Action.Pop;
   let [index, location] = getIndexAndLocation();
-  let listeners = createEvents<Listener>();
-  let blockers = createEvents<Blocker>();
+  let listeners = createEvents<Listener<S>>();
+  let blockers = createEvents<Blocker<S>>();
 
   if (index == null) {
     index = 0;
@@ -721,8 +721,8 @@ export function createHashHistory(
     return getBaseHref() + '#' + (typeof to === 'string' ? to : createPath(to));
   }
 
-  function getNextLocation(to: To, state: State = null): Location {
-    return readOnly<Location>({
+  function getNextLocation(to: To, state: S = null as S): Location<S> {
+    return readOnly<Location<S>>({
       ...location,
       ...(typeof to === 'string' ? parsePath(to) : to),
       state,
@@ -731,9 +731,9 @@ export function createHashHistory(
   }
 
   function getHistoryStateAndUrl(
-    nextLocation: Location,
+    nextLocation: Location<S>,
     index: number
-  ): [HistoryState, string] {
+  ): [HistoryState<S>, string] {
     return [
       {
         usr: nextLocation.state,
@@ -744,7 +744,7 @@ export function createHashHistory(
     ];
   }
 
-  function allowTx(action: Action, location: Location, retry: () => void) {
+  function allowTx(action: Action, location: Location<S>, retry: () => void) {
     return (
       !blockers.length || (blockers.call({ action, location, retry }), false)
     );
@@ -756,7 +756,7 @@ export function createHashHistory(
     listeners.call({ action, location });
   }
 
-  function push(to: To, state?: State) {
+  function push(to: To, state?: S) {
     let nextAction = Action.Push;
     let nextLocation = getNextLocation(to, state);
     function retry() {
@@ -787,7 +787,7 @@ export function createHashHistory(
     }
   }
 
-  function replace(to: To, state?: State) {
+  function replace(to: To, state?: S) {
     let nextAction = Action.Replace;
     let nextLocation = getNextLocation(to, state);
     function retry() {
@@ -815,7 +815,7 @@ export function createHashHistory(
     globalHistory.go(delta);
   }
 
-  let history: HashHistory = {
+  let history: HashHistory<S> = {
     get action() {
       return action;
     },
@@ -879,16 +879,16 @@ export type MemoryHistoryOptions = {
  *
  * @see https://github.com/ReactTraining/history/tree/master/docs/api-reference.md#creatememoryhistory
  */
-export function createMemoryHistory(
+export function createMemoryHistory<S extends State = State>(
   options: MemoryHistoryOptions = {}
-): MemoryHistory {
+): MemoryHistory<S> {
   let { initialEntries = ['/'], initialIndex } = options;
-  let entries: Location[] = initialEntries.map(entry => {
-    let location = readOnly<Location>({
+  let entries: Location<S>[] = initialEntries.map(entry => {
+    let location = readOnly<Location<S>>({
       pathname: '/',
       search: '',
       hash: '',
-      state: null,
+      state: null as S,
       key: createKey(),
       ...(typeof entry === 'string' ? parsePath(entry) : entry)
     });
@@ -910,15 +910,15 @@ export function createMemoryHistory(
 
   let action = Action.Pop;
   let location = entries[index];
-  let listeners = createEvents<Listener>();
-  let blockers = createEvents<Blocker>();
+  let listeners = createEvents<Listener<S>>();
+  let blockers = createEvents<Blocker<S>>();
 
   function createHref(to: To) {
     return typeof to === 'string' ? to : createPath(to);
   }
 
-  function getNextLocation(to: To, state: State = null): Location {
-    return readOnly<Location>({
+  function getNextLocation(to: To, state: S = null as S): Location<S> {
+    return readOnly<Location<S>>({
       ...location,
       ...(typeof to === 'string' ? parsePath(to) : to),
       state,
@@ -932,13 +932,13 @@ export function createMemoryHistory(
     );
   }
 
-  function applyTx(nextAction: Action, nextLocation: Location) {
+  function applyTx(nextAction: Action, nextLocation: Location<S>) {
     action = nextAction;
     location = nextLocation;
     listeners.call({ action, location });
   }
 
-  function push(to: To, state?: State) {
+  function push(to: To, state?: S) {
     let nextAction = Action.Push;
     let nextLocation = getNextLocation(to, state);
     function retry() {
@@ -959,7 +959,7 @@ export function createMemoryHistory(
     }
   }
 
-  function replace(to: To, state?: State) {
+  function replace(to: To, state?: S) {
     let nextAction = Action.Replace;
     let nextLocation = getNextLocation(to, state);
     function retry() {
@@ -993,7 +993,7 @@ export function createMemoryHistory(
     }
   }
 
-  let history: MemoryHistory = {
+  let history: MemoryHistory<S> = {
     get index() {
       return index;
     },
